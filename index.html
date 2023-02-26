@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Socket Connection</title>
+</head>
+
+<body>
+    <button id="socketConnect"> Connect </button>
+    <button id="socketDisconnect" disabled> Disconnect </button>
+    <h1 id="connectionStatus"> Not Connected </h1>
+    <script>
+        const params = new Proxy(new URLSearchParams(window.location.search), {
+            get: (searchParams, prop) => searchParams.get(prop),
+        });
+
+        var socket;
+        const api = params.api; const region = params.region; const env = params.env;
+        console.log("Api: ", api, "Region: ", region, "Env: ", env);
+
+        // On Connect button pressed
+        document.getElementById("socketConnect").addEventListener("click", function () {
+            // Create a new WebSocket
+            socket = new WebSocket(`wss://${api}.execute-api.${region}.amazonaws.com/${env}`);
+
+            // When the socket is open, send some data to the server
+            socket.addEventListener("open", open);
+
+            // Log errors
+            socket.addEventListener("error", er);
+
+            // on close
+            socket.addEventListener("close", closed);
+
+            // Message
+            socket.addEventListener("message", message);
+
+            // enable disconnect button
+            document.getElementById("socketDisconnect").disabled = false;
+
+            // disable connect button
+            document.getElementById("socketConnect").disabled = true;
+        });
+
+        // on disconnect button pressed
+        document.getElementById("socketDisconnect").addEventListener("click", function () {
+            socket.close();
+            console.log("Socket Disconnected");
+            document.getElementById("connectionStatus").innerHTML = "Socket Disconnected";
+
+            // disable disconnect button
+            document.getElementById("socketDisconnect").disabled = true;
+
+            // enable connect button
+            document.getElementById("socketConnect").disabled = false;
+        });
+
+
+        // Open handler
+        function open() {
+            console.log("Socket Connected");
+            document.getElementById("connectionStatus").innerHTML = "Socket Connected!!! waiting for messages...";
+
+            // Send a message to the WebSocket server
+            const payload = {
+                "action": "onmessage",
+                "msg": {
+                    "topic": "subscribe",
+                    "data": { "channel": "karthik123" }
+                }
+            };
+            socket.send(JSON.stringify(payload)); // Emit socket event
+        }
+
+        // Error handler
+        function er(error) {
+            console.log('WebSocket Error ' + error);
+            document.getElementById("connectionStatus").innerHTML = "Socket Error";
+        }
+
+        // Close handler
+        function closed(event) {
+            console.log("Socket Closed");
+            document.getElementById("connectionStatus").innerHTML = "Socket Closed";
+        }
+
+        // Message handler
+        function message(event) {
+            console.log("Message :", event.data);
+            document.getElementById("connectionStatus").innerHTML = JSON.stringify(event.data);
+        }
+
+    </script>
+</body>
+
+</html>

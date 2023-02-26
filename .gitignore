@@ -1,0 +1,10 @@
+# ignore node modules
+node_modules
+
+# ignore .env file
+.env
+
+# ignore sh files
+*.sh
+
+.DS_Store

@@ -1,0 +1,23 @@
+{
+  "name": "ws-sendmessage",
+  "version": "0.0.1",
+  "description": "ws-sendmessage",
+  "main": "index.ts",
+  "scripts": {
+    "cleanup": "rm -rf dist && rm -rf nodejs && rm -rf layer.zip && rm -rf index.zip",
+    "build-code": "mkdir -p dist && cp index.js dist/index.js",
+    "zip-code": "cd dist && zip -r9q index.zip .",
+    "lambda-deploy": "aws lambda update-function-code --function-name ws-sendmessage --zip-file fileb://dist/index.zip",
+    "setup-layer": "mkdir -p nodejs && cp package.json nodejs/package.json && cp package-lock.json nodejs/package-lock.json && cp -r ./node_modules nodejs/",
+    "zip-layer": "zip -r9q layer.zip nodejs",
+    "bundle-layer": "npm run cleanup && npm run setup-layer && npm run zip-layer",
+    "publish-fn": "npm run cleanup && npm run build-code && npm run zip-code && npm run lambda-deploy && npm run cleanup",
+    "publish-layer": "npm run bundle-layer && aws lambda publish-layer-version --layer-name ws-sendmessage-layer --zip-file fileb://layer.zip --compatible-runtimes nodejs18.x nodejs16.x nodejs14.x && npm run cleanup"
+  },
+  "author": "karthik.bharadwaj@pickcel.com",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "aws-sdk": "^2.1323.0"
+  }
+}
