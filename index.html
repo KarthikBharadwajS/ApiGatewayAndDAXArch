@@ -19,12 +19,14 @@
 
         var socket;
         const api = params.api; const region = params.region; const env = params.env;
-        console.log("Api: ", api, "Region: ", region, "Env: ", env);
+        // console.log("Api: ", api, "Region: ", region, "Env: ", env);
 
         // On Connect button pressed
         document.getElementById("socketConnect").addEventListener("click", function () {
             // Create a new WebSocket
-            socket = new WebSocket(`wss://${api}.execute-api.${region}.amazonaws.com/${env}`);
+            const endpoint = `wss://${api}.execute-api.${region}.amazonaws.com/${env}`;
+            // console.log(endpoint);
+            socket = new WebSocket(endpoint);
 
             // When the socket is open, send some data to the server
             socket.addEventListener("open", open);
@@ -64,15 +66,39 @@
             console.log("Socket Connected");
             document.getElementById("connectionStatus").innerHTML = "Socket Connected!!! waiting for messages...";
 
+            if (!params.mac) {
+                alert("No mac address provided");
+                socket.close();
+                console.log("Socket Disconnected");
+                document.getElementById("connectionStatus").innerHTML = "Socket Disconnected";
+
+                // disable disconnect button
+                document.getElementById("socketDisconnect").disabled = true;
+
+                // enable connect button
+                document.getElementById("socketConnect").disabled = false;
+                return;
+            }
             // Send a message to the WebSocket server
             const payload = {
                 "action": "onmessage",
                 "msg": {
                     "topic": "subscribe",
-                    "data": { "channel": "karthik123" }
+                    "data": { "channel": params.mac }
                 }
             };
             socket.send(JSON.stringify(payload)); // Emit socket event
+            setKeepSocketAlive();
+        };
+
+        var interval;
+        function setKeepSocketAlive() {
+            socket.send(JSON.stringify({ "action": "ping" }));
+            if (interval) clearInterval(interval);
+
+            interval = setInterval(function () {
+                socket.send(JSON.stringify({ "action": "ping" }));
+            }, 30000);
         }
 
         // Error handler
@@ -89,8 +115,11 @@
 
         // Message handler
         function message(event) {
-            console.log("Message :", event.data);
-            document.getElementById("connectionStatus").innerHTML = JSON.stringify(event.data);
+            let data;
+            try { data = JSON.parse(event.data); } catch (error) { data = event.data; };
+            if (data && data.message === "pong" || data && data.message === "Forbidden") return;
+            console.log("Message :", event.data.message);
+            document.getElementById("connectionStatus").innerHTML = typeof data === "string" ? data : JSON.stringify(data);
         }
 
     </script>
