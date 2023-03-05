@@ -1,5 +1,6 @@
 // Imports section
 const AWS = require('aws-sdk');
+const AmazonDaxClient = require('amazon-dax-client');
 
 // Response handlers
 const successResponse = (body = null) => {
@@ -21,6 +22,9 @@ exports.handler = async function (event, context) {
     try {
         const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body;
 
+        // Connect to DAX cluster
+        const dax = new AmazonDaxClient({ endpoints: [process.env.DAX_ENDPOINT] });
+
         const region = body.connection_region;
         // get item
         const params = {
@@ -28,7 +32,9 @@ exports.handler = async function (event, context) {
             Key: { mac_id: body.mac_id }
         };
 
-        const ddb = new AWS.DynamoDB.DocumentClient({ region: region, accessKeyId: process.env.AWS_ACCESS, secretAccessKey: process.env.AWS_SECRET });
+        /* const ddb = new AWS.DynamoDB.DocumentClient({ region: region, accessKeyId: process.env.AWS_ACCESS, secretAccessKey: process.env.AWS_SECRET }); */
+        const ddb = new AWS.DynamoDB.DocumentClient({ service: dax });
+
         const data = body.connection_id ? { Item: { mac_id: body.mac_id, connection_id: body.connection_id } } : await ddb.get(params).promise().catch(err => { return failureResponse({ message: err.message }); });
 
         
